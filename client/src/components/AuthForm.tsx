@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -18,7 +20,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     setTimeout(() => {
       setIsLoading(false)
       toast({
-        title: "Success!",
+        title: t.success,
         description: "You've been logged in successfully.",
       })
       onAuthSuccess()
@@ -29,22 +31,22 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">LifePlan</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">{t.auth_title}</CardTitle>
           <CardDescription className="text-center">
-            Transform your daily routine with AI-powered planning
+            {t.auth_description}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login" data-testid="tab-login">Login</TabsTrigger>
-              <TabsTrigger value="register" data-testid="tab-register">Register</TabsTrigger>
+              <TabsTrigger value="login" data-testid="tab-login">{t.auth_login}</TabsTrigger>
+              <TabsTrigger value="register" data-testid="tab-register">{t.auth_register}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login" className="space-y-4">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t.auth_email}</Label>
                   <Input 
                     id="email" 
                     type="email" 
@@ -54,7 +56,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">{t.auth_password}</Label>
                   <Input 
                     id="password" 
                     type="password"
@@ -68,7 +70,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
                   disabled={isLoading}
                   data-testid="button-login"
                 >
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  {isLoading ? t.auth_signing_in : t.auth_signin}
                 </Button>
               </form>
             </TabsContent>
@@ -76,7 +78,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
             <TabsContent value="register" className="space-y-4">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">{t.auth_name}</Label>
                   <Input 
                     id="name" 
                     placeholder="John Doe"
@@ -85,7 +87,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="reg-email">Email</Label>
+                  <Label htmlFor="reg-email">{t.auth_email}</Label>
                   <Input 
                     id="reg-email" 
                     type="email" 
@@ -95,7 +97,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="reg-password">Password</Label>
+                  <Label htmlFor="reg-password">{t.auth_password}</Label>
                   <Input 
                     id="reg-password" 
                     type="password"
@@ -109,7 +111,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
                   disabled={isLoading}
                   data-testid="button-register"
                 >
-                  {isLoading ? "Creating account..." : "Create Account"}
+                  {isLoading ? t.auth_creating_account : t.auth_create_account}
                 </Button>
               </form>
             </TabsContent>

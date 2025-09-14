@@ -13,45 +13,47 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
-const menuItems = [
-  {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Monthly Planner",
-    url: "/monthly",
-    icon: Calendar,
-  },
-  {
-    title: "Progress",
-    url: "/progress",
-    icon: TrendingUp,
-  },
-  {
-    title: "Goals",
-    url: "/goals", 
-    icon: Target,
-  },
-]
-
-const supportItems = [
-  {
-    title: "Contact Us",
-    url: "/contact",
-    icon: MessageSquare,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-  },
-]
+import { useLanguage } from "@/contexts/LanguageContext"
 
 export function AppSidebar() {
   const [location] = useLocation()
+  const { t } = useLanguage()
+
+  const menuItems = [
+    {
+      title: t.nav_dashboard,
+      url: "/dashboard",
+      icon: Home,
+    },
+    {
+      title: t.nav_monthly,
+      url: "/monthly",
+      icon: Calendar,
+    },
+    {
+      title: t.nav_progress,
+      url: "/progress",
+      icon: TrendingUp,
+    },
+    {
+      title: t.nav_goals,
+      url: "/goals", 
+      icon: Target,
+    },
+  ]
+
+  const supportItems = [
+    {
+      title: t.nav_contact,
+      url: "/contact",
+      icon: MessageSquare,
+    },
+    {
+      title: t.nav_settings,
+      url: "/settings",
+      icon: Settings,
+    },
+  ]
 
   return (
     <Sidebar>
@@ -60,7 +62,7 @@ export function AppSidebar() {
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">LP</span>
           </div>
-          <span className="font-bold text-lg">LifePlan</span>
+          <span className="font-bold text-lg">{t.app_name}</span>
         </div>
       </SidebarHeader>
       

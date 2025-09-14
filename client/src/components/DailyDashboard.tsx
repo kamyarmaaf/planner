@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Clock, CheckCircle2, Circle, Edit, Zap, Book, Dumbbell, Coffee, Brain } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface Task {
   id: string
@@ -45,6 +46,7 @@ const typeColors = {
 export function DailyDashboard() {
   const [tasks, setTasks] = useState<Task[]>(mockTasks)
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   const toggleTask = (taskId: string) => {
     setTasks(prev => prev.map(task => 
@@ -72,12 +74,12 @@ export function DailyDashboard() {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold">Good morning! 👋</h1>
+          <h1 className="text-3xl font-bold">{t.dashboard_good_morning}</h1>
           <p className="text-muted-foreground">{currentDate}</p>
         </div>
         <Button variant="outline" data-testid="button-edit-schedule">
           <Edit className="w-4 h-4 mr-2" />
-          Edit Schedule
+          {t.dashboard_edit_schedule}
         </Button>
       </div>
 
@@ -86,7 +88,7 @@ export function DailyDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-chart-2" />
-            Today's Progress
+            {t.dashboard_progress}
           </CardTitle>
           <CardDescription>
             {completedTasks} of {totalTasks} tasks completed
@@ -109,9 +111,9 @@ export function DailyDashboard() {
               <Zap className="w-4 h-4 text-accent-foreground" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-accent-foreground">AI Recommendation</h3>
+              <h3 className="font-semibold text-accent-foreground">{t.dashboard_ai_recommendation}</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Based on your energy levels, consider moving your reading session to after lunch for better focus. Your workout completion shows great consistency!
+                {t.dashboard_ai_suggestion}
               </p>
             </div>
           </div>

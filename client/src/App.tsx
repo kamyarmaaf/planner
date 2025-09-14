@@ -7,6 +7,8 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeProvider } from "./components/ThemeProvider"
 import { ThemeToggle } from "./components/ThemeToggle"
+import { LanguageProvider } from "./contexts/LanguageContext"
+import { LanguageToggle } from "./components/LanguageToggle"
 import { AppSidebar } from "./components/AppSidebar"
 import { AuthForm } from "./components/AuthForm"
 import { ProfileSetup } from "./components/ProfileSetup"
@@ -63,6 +65,7 @@ function AppContent() {
           <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex items-center gap-2">
+              <LanguageToggle />
               <ThemeToggle />
             </div>
           </header>
@@ -80,12 +83,14 @@ function AppContent() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light" storageKey="lifeplan-ui-theme">
-        <TooltipProvider>
-          <AppContent />
-          <Toaster />
-        </TooltipProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider defaultTheme="light" storageKey="lifeplan-ui-theme">
+          <TooltipProvider>
+            <AppContent />
+            <Toaster />
+          </TooltipProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   )
 }

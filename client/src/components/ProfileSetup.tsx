@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface ProfileData {
   workStudy: string
@@ -24,6 +25,7 @@ export function ProfileSetup({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const { t } = useLanguage()
   const [profileData, setProfileData] = useState<ProfileData>({
     workStudy: "",
     hobbies: "",
@@ -68,12 +70,12 @@ export function ProfileSetup({ onComplete }: { onComplete: () => void }) {
       <Card className="w-full max-w-2xl">
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
-            <CardTitle>Complete Your Profile</CardTitle>
-            <span className="text-sm text-muted-foreground">Step {step} of {totalSteps}</span>
+            <CardTitle>{t.profile_title}</CardTitle>
+            <span className="text-sm text-muted-foreground">{t.profile_step_of.replace('{current}', step.toString()).replace('{total}', totalSteps.toString())}</span>
           </div>
           <Progress value={progress} className="mb-4" />
           <CardDescription>
-            Help us create your personalized life plan with AI-powered recommendations
+            {t.profile_description}
           </CardDescription>
         </CardHeader>
         
@@ -200,12 +202,12 @@ export function ProfileSetup({ onComplete }: { onComplete: () => void }) {
               data-testid="button-previous"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Previous
+              {t.previous}
             </Button>
             
             {step < totalSteps ? (
               <Button onClick={nextStep} data-testid="button-next">
-                Next
+                {t.next}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             ) : (
@@ -214,7 +216,7 @@ export function ProfileSetup({ onComplete }: { onComplete: () => void }) {
                 disabled={isLoading}
                 data-testid="button-complete"
               >
-                {isLoading ? "Creating your plan..." : "Complete Setup"}
+                {isLoading ? t.profile_creating : t.profile_complete}
               </Button>
             )}
           </div>
