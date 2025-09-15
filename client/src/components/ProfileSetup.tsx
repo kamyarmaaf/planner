@@ -10,6 +10,8 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useLanguage } from "@/contexts/LanguageContext"
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
+
 interface ProfileData {
   workStudy: string
   hobbies: string
@@ -54,15 +56,80 @@ export function ProfileSetup({ onComplete }: { onComplete: () => void }) {
 
   const handleSubmit = async () => {
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
+    
+    try {
+      // Get access token from localStorage
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        toast({
+          title: "Error",
+          description: "Please log in first",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Build payload from state
+      const payload = {
+        workStudy: profileData.workStudy,
+        hobbies: profileData.hobbies,
+        sports: profileData.sports,
+        location: profileData.location,
+        reading: profileData.reading || null,
+        weight: profileData.weight ? parseInt(profileData.weight) : null,
+        height: profileData.height ? parseInt(profileData.height) : null,
+        age: profileData.age ? parseInt(profileData.age) : null,
+      };
+
+      // Save profile
+      const profileResponse = await fetch(`${API_BASE_URL}api/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!profileResponse.ok) {
+        const errorData = await profileResponse.json();
+        throw new Error(errorData.message || 'Failed to save profile');
+      }
+
+      // Fire-and-forget: Generate daily plan
+      const today = new Date().toISOString().slice(0, 10);
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      
+      fetch(`${API_BASE_URL}api/plan/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ date: today, timezone }),
+      }).catch(error => {
+        console.warn('Failed to generate daily plan:', error);
+      });
+
+      // Show success toast
       toast({
         title: "Profile Complete!",
         description: "Your AI-powered planning will begin shortly.",
-      })
-      onComplete()
-    }, 1500)
+      });
+
+      // Call completion callback
+      onComplete();
+
+    } catch (error) {
+      // Show error toast
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (

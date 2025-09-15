@@ -11,10 +11,16 @@ import {
   type AuthRequest 
 } from "./auth";
 import { insertUserSchema } from "@shared/schema";
+import profileRoutes from "./routes/profile";
+import planRoutes from "./routes/plan";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize database tables
   await initializeDatabase();
+
+  // Mount API routes
+  app.use('/api/profile', profileRoutes);
+  app.use('/api/plan', planRoutes);
 
   // Auth routes
   app.post('/api/auth/register', async (req, res) => {
