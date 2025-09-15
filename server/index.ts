@@ -3,9 +3,12 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Middleware برای JSON و URL-encoded
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Middleware برای لاگ کردن درخواست‌ها
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -39,6 +42,7 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Middleware خطا
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -47,25 +51,22 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // فقط در حالت توسعه Vite ستاپ شود
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
+  // تنظیم host و پورت برای ویندوز و لینوکس
+  const port = process.env.PORT || '5173';
+  const host = process.platform === "win32" ? "127.0.0.1" : "0.0.0.0";
+
   server.listen({
     port,
-    host: "0.0.0.0",
-    reusePort: true,
+    host,
+    ...(process.platform !== "win32" && { reusePort: true }), // فقط لینوکس
   }, () => {
-    log(`serving on port ${port}`);
+    log(`Server running at http://${host}:${port}`);
   });
 })();

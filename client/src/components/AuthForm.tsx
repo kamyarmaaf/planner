@@ -7,24 +7,103 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useLanguage } from "@/contexts/LanguageContext"
 
+interface AuthResponse {
+  message: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  accessToken: string;
+  refreshToken: string;
+}
+
 export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   const [isLoading, setIsLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState("login")
   const { toast } = useToast()
   const { t } = useLanguage()
+
+  const handleLogin = async (email: string, password: string) => {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Login failed');
+    }
+
+    return data as AuthResponse;
+  };
+
+  const handleRegister = async (name: string, email: string, password: string) => {
+    const response = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Registration failed');
+    }
+
+    return data as AuthResponse;
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
+    try {
+      const formData = new FormData(e.currentTarget);
+      const isLogin = activeTab === "login";
+      
+      let response: AuthResponse;
+      
+      if (isLogin) {
+        const email = formData.get("email") as string;
+        const password = formData.get("password") as string;
+        response = await handleLogin(email, password);
+      } else {
+        const name = formData.get("name") as string;
+        const email = formData.get("reg-email") as string;
+        const password = formData.get("reg-password") as string;
+        response = await handleRegister(name, email, password);
+      }
+
+      // Save tokens to localStorage
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
+      localStorage.setItem('user', JSON.stringify(response.user));
+
+      // Show success toast
       toast({
         title: t.success,
-        description: "You've been logged in successfully.",
-      })
-      onAuthSuccess()
-    }, 1000)
+        description: response.message,
+      });
+
+      // Call success callback
+      onAuthSuccess();
+    } catch (error) {
+      // Show error toast
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -37,7 +116,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login" data-testid="tab-login">{t.auth_login}</TabsTrigger>
               <TabsTrigger value="register" data-testid="tab-register">{t.auth_register}</TabsTrigger>
@@ -49,6 +128,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
                   <Label htmlFor="email">{t.auth_email}</Label>
                   <Input 
                     id="email" 
+                    name="email"
                     type="email" 
                     placeholder="your@email.com"
                     data-testid="input-email"
@@ -59,6 +139,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
                   <Label htmlFor="password">{t.auth_password}</Label>
                   <Input 
                     id="password" 
+                    name="password"
                     type="password"
                     data-testid="input-password"
                     required 
@@ -81,6 +162,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
                   <Label htmlFor="name">{t.auth_name}</Label>
                   <Input 
                     id="name" 
+                    name="name"
                     placeholder="John Doe"
                     data-testid="input-name"
                     required 
@@ -90,6 +172,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
                   <Label htmlFor="reg-email">{t.auth_email}</Label>
                   <Input 
                     id="reg-email" 
+                    name="reg-email"
                     type="email" 
                     placeholder="your@email.com"
                     data-testid="input-register-email"
@@ -100,6 +183,7 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
                   <Label htmlFor="reg-password">{t.auth_password}</Label>
                   <Input 
                     id="reg-password" 
+                    name="reg-password"
                     type="password"
                     data-testid="input-register-password"
                     required 
