@@ -22,6 +22,7 @@ export const profiles = sqliteTable("profiles", {
   heightCm: integer("height_cm"),
   ageYears: integer("age_years"),
   reading: text("reading"),
+  extraInformation: text("extra_information"),
   aiContext: text("ai_context"),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
@@ -63,6 +64,7 @@ export const insertProfileSchema = createInsertSchema(profiles).pick({
   heightCm: true,
   ageYears: true,
   reading: true,
+  extraInformation: true,
   aiContext: true,
 });
 

@@ -21,6 +21,7 @@ interface ProfileData {
   height: string
   age: string
   reading: string
+  extraInformation: string
 }
 
 export function ProfileSetup({ onComplete }: { onComplete: () => void }) {
@@ -36,7 +37,8 @@ export function ProfileSetup({ onComplete }: { onComplete: () => void }) {
     weight: "",
     height: "",
     age: "",
-    reading: ""
+    reading: "",
+    extraInformation: ""
   })
 
   const totalSteps = 4
@@ -79,6 +81,7 @@ export function ProfileSetup({ onComplete }: { onComplete: () => void }) {
         weight: profileData.weight ? parseInt(profileData.weight) : null,
         height: profileData.height ? parseInt(profileData.height) : null,
         age: profileData.age ? parseInt(profileData.age) : null,
+        extraInformation: profileData.extraInformation || null,
       };
 
       // Save profile
@@ -242,7 +245,7 @@ export function ProfileSetup({ onComplete }: { onComplete: () => void }) {
 
           {step === 4 && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Reading Preferences</h3>
+              <h3 className="text-lg font-semibold">Reading Preferences & Additional Information</h3>
               <div className="space-y-2">
                 <Label htmlFor="reading">What do you like to read?</Label>
                 <Textarea
@@ -251,6 +254,16 @@ export function ProfileSetup({ onComplete }: { onComplete: () => void }) {
                   value={profileData.reading}
                   onChange={(e) => updateField('reading', e.target.value)}
                   data-testid="input-reading"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="extra-information">Extra information</Label>
+                <Textarea
+                  id="extra-information"
+                  placeholder="Any additional information you'd like to share about your goals, preferences, or anything else that might help with your planning..."
+                  value={profileData.extraInformation}
+                  onChange={(e) => updateField('extraInformation', e.target.value)}
+                  data-testid="input-extra-information"
                 />
               </div>
               <div className="bg-accent/50 p-4 rounded-lg">

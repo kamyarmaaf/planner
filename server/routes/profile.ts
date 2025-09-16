@@ -17,6 +17,7 @@ const profileSchema = z.object({
   height: z.number().min(0).nullable().optional(),
   age: z.number().min(0).nullable().optional(),
   reading: z.string().nullable().optional(),
+  extraInformation: z.string().nullable().optional(),
 });
 
 // GET /api/profile/me - Get current user's profile
@@ -41,6 +42,7 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res) => {
         height: profile.heightCm,
         age: profile.ageYears,
         reading: profile.reading,
+        extraInformation: profile.extraInformation,
         createdAt: profile.createdAt,
         updatedAt: profile.updatedAt
       }
@@ -63,7 +65,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
-    const { workStudy, hobbies, sports, location, weight, height, age, reading } = validation.data;
+    const { workStudy, hobbies, sports, location, weight, height, age, reading, extraInformation } = validation.data;
 
     // Create/update profile
     const profile = await storage.upsertProfile({
@@ -75,7 +77,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
       weightKg: weight,
       heightCm: height,
       ageYears: age,
-      reading
+      reading,
+      extraInformation
     });
 
     // Build AI context and update profile
@@ -98,6 +101,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
         height: updatedProfile.heightCm,
         age: updatedProfile.ageYears,
         reading: updatedProfile.reading,
+        extraInformation: updatedProfile.extraInformation,
         createdAt: updatedProfile.createdAt,
         updatedAt: updatedProfile.updatedAt
       }
