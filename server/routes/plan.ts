@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage';
-import { authenticateToken, type AuthRequest } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { type AuthRequest } from '../auth';
 import { generateDailyPlan } from '../services/ai/generateDailyPlan';
 
 const router = Router();
@@ -106,8 +107,39 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
 // GET /api/plan/today - Convenience endpoint for today's plan
 router.get('/today', authenticateToken, async (req: AuthRequest, res) => {
   const today = new Date().toISOString().slice(0, 10);
-  req.query.date = today;
-  return router.handle(req, res);
+  
+  try {
+    const plan = await storage.getDailyPlan(req.user!.id, today);
+    
+    if (!plan) {
+      return res.status(404).json({ message: 'Plan not found for today' });
+    }
+
+    // Parse the plan JSON
+    let planData;
+    try {
+      planData = JSON.parse(plan.planJson);
+    } catch (error) {
+      console.error('Error parsing plan JSON:', error);
+      return res.status(500).json({ message: 'Error parsing plan data' });
+    }
+
+    res.json({
+      message: 'Plan retrieved successfully',
+      plan: {
+        id: plan.id,
+        userId: plan.userId,
+        date: plan.date,
+        timezone: plan.timezone,
+        data: planData,
+        createdAt: plan.createdAt,
+        updatedAt: plan.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('Get today plan error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
 export default router;

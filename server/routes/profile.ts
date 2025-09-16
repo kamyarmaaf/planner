@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage';
-import { authenticateToken, type AuthRequest } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { type AuthRequest } from '../auth';
 import { buildAIContext } from '../services/ai/buildAIContext';
 
 const router = Router();
