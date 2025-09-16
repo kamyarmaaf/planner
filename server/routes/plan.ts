@@ -293,12 +293,39 @@ router.post('/update-task', authenticateToken, async (req: AuthRequest, res) => 
 
     const { taskId, completed, date } = validation.data;
     const targetDate = date || new Date().toISOString().slice(0, 10);
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     
     // Get current daily plan
-    const plan = await storage.getDailyPlan(req.user!.id, targetDate);
+    let plan = await storage.getDailyPlan(req.user!.id, targetDate);
     
+    // If no plan exists, create one with default template tasks
     if (!plan) {
-      return res.status(404).json({ message: 'Daily plan not found' });
+      const defaultTasks = [
+        { id: '1', title: 'Sleep', time: '23:00', type: 'rest', completed: false, description: 'Sleep from 11:00 PM to 6:00 AM' },
+        { id: '2', title: 'Morning Routine', time: '06:00', type: 'rest', completed: false, description: 'Wake up and morning preparation' },
+        { id: '3', title: 'Morning Workout', time: '07:00', type: 'workout', completed: false, description: '30min cardio + stretching' },
+        { id: '4', title: 'Healthy Breakfast', time: '08:30', type: 'meal', completed: false, description: 'Oatmeal with berries' },
+        { id: '5', title: 'Deep Work Session', time: '09:00', type: 'work', completed: false, description: 'Focus block - main projects' },
+        { id: '6', title: 'Lunch Break', time: '12:30', type: 'meal', completed: false, description: 'Healthy lunch and short walk' },
+        { id: '7', title: 'Afternoon Work', time: '14:00', type: 'work', completed: false, description: 'Secondary tasks and meetings' },
+        { id: '8', title: 'Evening Reading', time: '20:00', type: 'reading', completed: false, description: 'Read for 30-45 minutes' },
+        { id: '9', title: 'Wind Down', time: '21:30', type: 'rest', completed: false, description: 'Prepare for sleep and relaxation' },
+      ];
+
+      // Create a new daily plan with template tasks
+      await storage.upsertDailyPlan({
+        userId: req.user!.id,
+        date: targetDate,
+        timezone,
+        planJson: JSON.stringify({ daily_tasks: defaultTasks })
+      });
+
+      // Fetch the newly created plan
+      plan = await storage.getDailyPlan(req.user!.id, targetDate);
+      
+      if (!plan) {
+        return res.status(500).json({ message: 'Failed to create daily plan' });
+      }
     }
 
     // Parse plan data
