@@ -63,6 +63,7 @@ export const insertProfileSchema = createInsertSchema(profiles).pick({
   heightCm: true,
   ageYears: true,
   reading: true,
+  aiContext: true,
 });
 
 export const insertDailyPlanSchema = createInsertSchema(dailyPlans).pick({
