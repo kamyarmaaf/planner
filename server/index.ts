@@ -59,13 +59,13 @@ app.use((req, res, next) => {
   }
 
   // تنظیم host و پورت برای ویندوز و لینوکس
-  const port = process.env.PORT || '5173';
-  const host = process.platform === "win32" ? "127.0.0.1" : "0.0.0.0";
+  const port = process.env.PORT || '5000';
+  const host = "0.0.0.0";
 
   server.listen({
     port,
     host,
-    ...(process.platform !== "win32" && { reusePort: true }), // فقط لینوکس
+    reusePort: true,
   }, () => {
     log(`Server running at http://${host}:${port}`);
   });
