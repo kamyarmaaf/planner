@@ -43,16 +43,15 @@ export function DailyDashboard() {
         const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string) || '/').replace(/\/?$/, '/')
         const accessToken = localStorage.getItem('accessToken')
 
-        // First try to load today's plan from DB
-        const today = new Date().toISOString().slice(0, 10)
-        let res = await fetch(`${API_BASE_URL}api/plan?date=${today}`, {
+        // First try to load comprehensive planning data
+        let res = await fetch(`${API_BASE_URL}api/plan/comprehensive`, {
           headers: {
             ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           },
         })
 
-        if (res.status === 404) {
-          // Generate via AI (server will persist)
+        if (res.status === 404 || !res.ok) {
+          // Fall back to generating via AI if no comprehensive data exists
           res = await fetch(`${API_BASE_URL}api/ai/daily-tasks`, {
             method: 'POST',
             headers: {
@@ -68,9 +67,12 @@ export function DailyDashboard() {
         }
 
         const data = await res.json()
-        const list = data?.plan?.data?.items
-          ? data.plan.data.items // old schema
-          : (data?.plan?.data?.daily_tasks ?? data?.daily_tasks) // current schema
+        
+        // Handle comprehensive planning data or fallback to AI-generated tasks
+        const dailyTasks = data?.data?.daily_tasks || 
+                          data?.plan?.data?.items || 
+                          data?.plan?.data?.daily_tasks || 
+                          data?.daily_tasks || []
 
         const defaultByType: Record<string, string> = {
           workout: '07:00',
@@ -80,7 +82,7 @@ export function DailyDashboard() {
           reading: '20:00',
         }
 
-        const aiTasks: Task[] = (list ?? []).map((t: any) => ({
+        const processedTasks: Task[] = (dailyTasks ?? []).map((t: any) => ({
           id: String(t.id ?? crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)),
           title: String(t.title ?? ''),
           time: String((t.time && String(t.time)) || defaultByType[String(t.type)] || '09:00'),
@@ -89,13 +91,32 @@ export function DailyDashboard() {
           description: t.description ? String(t.description) : undefined,
         }))
 
-        setTasks(aiTasks)
+        // If no tasks exist, provide a full-day template
+        if (processedTasks.length === 0) {
+          const fullDayTasks: Task[] = [
+            { id: '1', title: 'Sleep', time: '23:00', type: 'rest', completed: false, description: 'Sleep from 11:00 PM to 6:00 AM' },
+            { id: '2', title: 'Morning Routine', time: '06:00', type: 'rest', completed: false, description: 'Wake up and morning preparation' },
+            { id: '3', title: 'Morning Workout', time: '07:00', type: 'workout', completed: false, description: '30min cardio + stretching' },
+            { id: '4', title: 'Healthy Breakfast', time: '08:30', type: 'meal', completed: false, description: 'Oatmeal with berries' },
+            { id: '5', title: 'Deep Work Session', time: '09:00', type: 'work', completed: false, description: 'Focus block - main projects' },
+            { id: '6', title: 'Lunch Break', time: '12:30', type: 'meal', completed: false, description: 'Healthy lunch and short walk' },
+            { id: '7', title: 'Afternoon Work', time: '14:00', type: 'work', completed: false, description: 'Secondary tasks and meetings' },
+            { id: '8', title: 'Evening Reading', time: '20:00', type: 'reading', completed: false, description: 'Read for 30-45 minutes' },
+            { id: '9', title: 'Wind Down', time: '21:30', type: 'rest', completed: false, description: 'Prepare for sleep and relaxation' },
+          ]
+          setTasks(fullDayTasks)
+        } else {
+          setTasks(processedTasks)
+        }
       } catch (err) {
         console.error(err)
+        // Fallback to full-day template on error
         setTasks([
-          { id: '1', title: 'Morning Workout', time: '07:00', type: 'workout', completed: false, description: '30min cardio + stretching' },
-          { id: '2', title: 'Healthy Breakfast', time: '08:30', type: 'meal', completed: false, description: 'Oatmeal with berries' },
-          { id: '3', title: 'Deep Work', time: '09:00', type: 'work', completed: false, description: 'Focus block' },
+          { id: '1', title: 'Sleep', time: '23:00', type: 'rest', completed: false, description: 'Sleep from 11:00 PM to 6:00 AM' },
+          { id: '2', title: 'Morning Routine', time: '06:00', type: 'rest', completed: false, description: 'Wake up and morning preparation' },
+          { id: '3', title: 'Morning Workout', time: '07:00', type: 'workout', completed: false, description: '30min cardio + stretching' },
+          { id: '4', title: 'Healthy Breakfast', time: '08:30', type: 'meal', completed: false, description: 'Nutritious breakfast' },
+          { id: '5', title: 'Deep Work', time: '09:00', type: 'work', completed: false, description: 'Focus block' },
         ])
       }
     }
@@ -113,22 +134,39 @@ export function DailyDashboard() {
       const today = new Date().toISOString().slice(0, 10)
       const updated = next.find(t => t.id === taskId)!
 
-      await fetch(`${API_BASE_URL}api/ai/daily-tasks/toggle`, {
+      // Use the new comprehensive planning API
+      const response = await fetch(`${API_BASE_URL}api/plan/update-task`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
-        body: JSON.stringify({ date: today, id: updated.id, completed: updated.completed }),
+        body: JSON.stringify({ 
+          taskId: updated.id, 
+          completed: updated.completed, 
+          date: today 
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Update failed: ${response.status}`)
+      }
+
+      toast({
+        title: "Task updated!",
+        description: "Your progress has been saved.",
       })
     } catch (e) {
       console.error(e)
+      // Revert the change if API call fails
+      setTasks(tasks)
+      
+      toast({
+        title: "Update failed",
+        description: "Unable to save your progress. Please try again.",
+        variant: "destructive",
+      })
     }
-
-    toast({
-      title: "Task updated!",
-      description: "Your progress has been saved.",
-    })
   }
 
   const completedTasks = tasks.filter(task => task.completed).length
