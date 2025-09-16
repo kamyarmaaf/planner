@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Profile, type InsertProfile, type DailyPlan, type InsertDailyPlan, users, profiles, dailyPlans } from "@shared/schema";
+import { type User, type InsertUser, type Profile, type InsertProfile, type DailyPlan, type InsertDailyPlan, type Message, type InsertMessage, users, profiles, dailyPlans, messages } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 
@@ -10,6 +10,8 @@ export interface IStorage {
   upsertProfile(profile: InsertProfile): Promise<Profile>;
   getDailyPlan(userId: number, date: string): Promise<DailyPlan | undefined>;
   upsertDailyPlan(plan: InsertDailyPlan): Promise<DailyPlan>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  getAllMessages(): Promise<Message[]>;
 }
 
 export class DbStorage implements IStorage {
@@ -80,6 +82,16 @@ export class DbStorage implements IStorage {
       const result = await db.insert(dailyPlans).values(plan).returning();
       return result[0];
     }
+  }
+
+  async createMessage(message: InsertMessage): Promise<Message> {
+    const result = await db.insert(messages).values(message).returning();
+    return result[0];
+  }
+
+  async getAllMessages(): Promise<Message[]> {
+    const result = await db.select().from(messages).orderBy(messages.createdAt);
+    return result;
   }
 }
 

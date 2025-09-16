@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,23 +16,12 @@ interface Task {
   description?: string
 }
 
-// todo: remove mock functionality
-const mockTasks: Task[] = [
-  { id: '1', title: 'Morning Workout', time: '07:00', type: 'workout', completed: true, description: '30min cardio + strength training' },
-  { id: '2', title: 'Healthy Breakfast', time: '08:30', type: 'meal', completed: true, description: 'Oatmeal with berries and protein' },
-  { id: '3', title: 'Deep Work Session', time: '09:00', type: 'work', completed: false, description: 'Focus on project deliverables' },
-  { id: '4', title: 'Reading Time', time: '12:00', type: 'reading', completed: false, description: 'Atomic Habits - Chapter 3' },
-  { id: '5', title: 'Lunch Break', time: '13:00', type: 'meal', completed: false, description: 'Mediterranean salad with quinoa' },
-  { id: '6', title: 'Afternoon Work', time: '14:00', type: 'work', completed: false, description: 'Team meetings and code reviews' },
-  { id: '7', title: 'Rest & Reflection', time: '18:00', type: 'rest', completed: false, description: 'Meditation and planning tomorrow' },
-]
-
 const typeIcons = {
   workout: Dumbbell,
   meal: Coffee,
   reading: Book,
   work: Brain,
-  rest: Clock
+  rest: Clock,
 }
 
 const typeColors = {
@@ -40,18 +29,102 @@ const typeColors = {
   meal: 'bg-chart-3', 
   reading: 'bg-chart-2',
   work: 'bg-chart-4',
-  rest: 'bg-chart-5'
+  rest: 'bg-chart-5',
 }
 
 export function DailyDashboard() {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks)
+  const [tasks, setTasks] = useState<Task[]>([])
   const { toast } = useToast()
   const { t } = useLanguage()
 
-  const toggleTask = (taskId: string) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    ))
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string) || '/').replace(/\/?$/, '/')
+        const accessToken = localStorage.getItem('accessToken')
+
+        // First try to load today's plan from DB
+        const today = new Date().toISOString().slice(0, 10)
+        let res = await fetch(`${API_BASE_URL}api/plan?date=${today}`, {
+          headers: {
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
+        })
+
+        if (res.status === 404) {
+          // Generate via AI (server will persist)
+          res = await fetch(`${API_BASE_URL}api/ai/daily-tasks`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            },
+          })
+        }
+
+        if (!res.ok) {
+          const text = await res.text()
+          throw new Error(`Load tasks error ${res.status}: ${text}`)
+        }
+
+        const data = await res.json()
+        const list = data?.plan?.data?.items
+          ? data.plan.data.items // old schema
+          : (data?.plan?.data?.daily_tasks ?? data?.daily_tasks) // current schema
+
+        const defaultByType: Record<string, string> = {
+          workout: '07:00',
+          meal: '08:30',
+          work: '09:00',
+          rest: '18:00',
+          reading: '20:00',
+        }
+
+        const aiTasks: Task[] = (list ?? []).map((t: any) => ({
+          id: String(t.id ?? crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+          title: String(t.title ?? ''),
+          time: String((t.time && String(t.time)) || defaultByType[String(t.type)] || '09:00'),
+          type: (t.type as Task['type']) ?? 'work',
+          completed: Boolean(t.completed ?? false),
+          description: t.description ? String(t.description) : undefined,
+        }))
+
+        setTasks(aiTasks)
+      } catch (err) {
+        console.error(err)
+        setTasks([
+          { id: '1', title: 'Morning Workout', time: '07:00', type: 'workout', completed: false, description: '30min cardio + stretching' },
+          { id: '2', title: 'Healthy Breakfast', time: '08:30', type: 'meal', completed: false, description: 'Oatmeal with berries' },
+          { id: '3', title: 'Deep Work', time: '09:00', type: 'work', completed: false, description: 'Focus block' },
+        ])
+      }
+    }
+
+    fetchTasks()
+  }, [])
+
+  const toggleTask = async (taskId: string) => {
+    const next = tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t)
+    setTasks(next)
+
+    try {
+      const API_BASE_URL = ((import.meta.env.VITE_API_BASE_URL as string) || '/').replace(/\/?$/, '/')
+      const accessToken = localStorage.getItem('accessToken')
+      const today = new Date().toISOString().slice(0, 10)
+      const updated = next.find(t => t.id === taskId)!
+
+      await fetch(`${API_BASE_URL}api/ai/daily-tasks/toggle`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ date: today, id: updated.id, completed: updated.completed }),
+      })
+    } catch (e) {
+      console.error(e)
+    }
+
     toast({
       title: "Task updated!",
       description: "Your progress has been saved.",
@@ -62,11 +135,11 @@ export function DailyDashboard() {
   const totalTasks = tasks.length
   const progressPercentage = (completedTasks / totalTasks) * 100
 
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   })
 
   return (
@@ -103,33 +176,18 @@ export function DailyDashboard() {
         </CardContent>
       </Card>
 
-      {/* AI Suggestion */}
-      <Card className="border-accent">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-4">
-            <div className="p-2 bg-accent rounded-lg">
-              <Zap className="w-4 h-4 text-accent-foreground" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-accent-foreground">{t.dashboard_ai_recommendation}</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {t.dashboard_ai_suggestion}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Task List */}
       <div className="space-y-3">
         {tasks.map((task) => {
-          const Icon = typeIcons[task.type]
+          const Icon = typeIcons[task.type] ?? Brain
           const colorClass = typeColors[task.type]
           
           return (
             <Card 
               key={task.id} 
-              className={`hover-elevate cursor-pointer transition-all ${task.completed ? 'opacity-70' : ''}`}
+              className={`hover-elevate cursor-pointer transition-all ${
+                task.completed ? "opacity-70" : ""
+              }`}
               onClick={() => toggleTask(task.id)}
               data-testid={`task-${task.id}`}
             >
@@ -148,7 +206,11 @@ export function DailyDashboard() {
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className={`font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                    <h3
+                      className={`font-medium ${
+                        task.completed ? "line-through text-muted-foreground" : ""
+                      }`}
+                    >
                       {task.title}
                     </h3>
                     <Badge variant="secondary" className="text-xs">

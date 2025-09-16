@@ -23,15 +23,40 @@ export function ContactForm() {
     e.preventDefault()
     setIsLoading(true)
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
+      
+      const response = await fetch(`${API_BASE_URL}api/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send message');
+      }
+
       toast({
         title: "Message sent!",
         description: "We'll get back to you within 24 hours.",
-      })
-      setFormData({ name: "", email: "", subject: "", category: "", message: "" })
-    }, 1000)
+      });
+      
+      // Reset form
+      setFormData({ name: "", email: "", subject: "", category: "", message: "" });
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const updateField = (field: string, value: string) => {
@@ -60,7 +85,7 @@ export function ContactForm() {
               <p className="text-sm text-muted-foreground mb-2">
                 Get help with your account, billing, or technical issues
               </p>
-              <p className="font-medium">support@lifeplan.app</p>
+              <p className="font-medium">kamyarmf1@gmail.com</p>
             </CardContent>
           </Card>
 
@@ -73,7 +98,7 @@ export function ContactForm() {
               <p className="text-sm text-muted-foreground mb-2">
                 Quick questions? Chat with our support team
               </p>
-              <p className="font-medium">Available 9 AM - 6 PM EST</p>
+              <p className="font-medium">Available 8 AM - ela</p>
             </CardContent>
           </Card>
 
@@ -86,7 +111,7 @@ export function ContactForm() {
               <p className="text-sm text-muted-foreground mb-2">
                 For urgent matters and detailed assistance
               </p>
-              <p className="font-medium">+1 (555) 123-4567</p>
+              <p className="font-medium">+98 938 298 9027</p>
             </CardContent>
           </Card>
         </div>

@@ -13,6 +13,8 @@ import {
 import { insertUserSchema } from "@shared/schema";
 import profileRoutes from "./routes/profile";
 import planRoutes from "./routes/plan";
+import aiRoutes from "./routes/ai";
+import contactRoutes from "./routes/contact";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize database tables
@@ -21,6 +23,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount API routes
   app.use('/api/profile', profileRoutes);
   app.use('/api/plan', planRoutes);
+  app.use('/api/ai', aiRoutes);
+  app.use('/api/contact', contactRoutes);
 
   // Auth routes
   app.post('/api/auth/register', async (req, res) => {

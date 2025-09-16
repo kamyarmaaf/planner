@@ -18,7 +18,7 @@ interface AuthResponse {
   refreshToken: string;
 }
 
-export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
+export function AuthForm({ onAuthSuccess }: { onAuthSuccess: (user: any, accessToken: string, refreshToken: string) => void }) {
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("login")
   const { toast } = useToast()
@@ -81,19 +81,14 @@ export function AuthForm({ onAuthSuccess }: { onAuthSuccess: () => void }) {
         response = await handleRegister(name, email, password);
       }
 
-      // Save tokens to localStorage
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
-
       // Show success toast
       toast({
         title: t.success,
         description: response.message,
       });
 
-      // Call success callback
-      onAuthSuccess();
+      // Call success callback with user data and tokens
+      onAuthSuccess(response.user, response.accessToken, response.refreshToken);
     } catch (error) {
       // Show error toast
       toast({

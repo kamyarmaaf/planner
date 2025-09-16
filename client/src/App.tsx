@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Switch, Route } from "wouter"
 import { queryClient } from "./lib/queryClient"
 import { QueryClientProvider } from "@tanstack/react-query"
@@ -8,6 +8,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeProvider } from "./components/ThemeProvider"
 import { ThemeToggle } from "./components/ThemeToggle"
 import { LanguageProvider } from "./contexts/LanguageContext"
+import { AuthProvider, useAuth } from "./contexts/AuthContext"
 import { LanguageToggle } from "./components/LanguageToggle"
 import { AppSidebar } from "./components/AppSidebar"
 import { AuthForm } from "./components/AuthForm"
@@ -41,7 +42,11 @@ function Router() {
 }
 
 function AppContent() {
-  const [appState, setAppState] = useState<AppState>('auth')
+  const { isAuthenticated, isLoading, user, login, logout } = useAuth();
+  const [appState, setAppState] = useState<AppState>('auth');
+  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
 
   // Custom sidebar width for life planning application
   const style = {
@@ -49,8 +54,59 @@ function AppContent() {
     "--sidebar-width-icon": "4rem",   // default icon width
   }
 
+  // Check if user has a profile when authenticated
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (isAuthenticated && user) {
+        try {
+          const accessToken = localStorage.getItem('accessToken');
+          const response = await fetch(`${API_BASE_URL}api/profile/me`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          });
+          
+          if (response.ok) {
+            setHasProfile(true);
+            setAppState('app');
+          } else if (response.status === 404) {
+            setHasProfile(false);
+            setAppState('profile-setup');
+          } else {
+            // If there's an auth error, logout
+            logout();
+          }
+        } catch (error) {
+          console.error('Error checking profile:', error);
+          logout();
+        }
+      }
+    };
+
+    if (isAuthenticated) {
+      checkProfile();
+    } else {
+      setHasProfile(null);
+      setAppState('auth');
+    }
+  }, [isAuthenticated, user, logout]);
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Handle authentication success
+  const handleAuthSuccess = (userData: any, accessToken: string, refreshToken: string) => {
+    login(userData, accessToken, refreshToken);
+  };
+
   if (appState === 'auth') {
-    return <AuthForm onAuthSuccess={() => setAppState('profile-setup')} />
+    return <AuthForm onAuthSuccess={handleAuthSuccess} />
   }
 
   if (appState === 'profile-setup') {
@@ -84,12 +140,14 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <ThemeProvider defaultTheme="light" storageKey="lifeplan-ui-theme">
-          <TooltipProvider>
-            <AppContent />
-            <Toaster />
-          </TooltipProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider defaultTheme="light" storageKey="lifeplan-ui-theme">
+            <TooltipProvider>
+              <AppContent />
+              <Toaster />
+            </TooltipProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </LanguageProvider>
     </QueryClientProvider>
   )

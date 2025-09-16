@@ -37,6 +37,16 @@ export const dailyPlans = sqliteTable("daily_plans", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const messages = sqliteTable("messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  subject: text("subject").notNull(),
+  category: text("category").notNull(),
+  message: text("message").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   name: true,
   email: true,
@@ -62,9 +72,19 @@ export const insertDailyPlanSchema = createInsertSchema(dailyPlans).pick({
   planJson: true,
 });
 
+export const insertMessageSchema = createInsertSchema(messages).pick({
+  name: true,
+  email: true,
+  subject: true,
+  category: true,
+  message: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type Profile = typeof profiles.$inferSelect;
 export type InsertDailyPlan = z.infer<typeof insertDailyPlanSchema>;
 export type DailyPlan = typeof dailyPlans.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type Message = typeof messages.$inferSelect;
